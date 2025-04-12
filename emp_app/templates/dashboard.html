@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2 class="mb-4">📊 Dashboard</h2>
+
+<div class="row">
+  <!-- Task Status -->
+  <div class="col-md-6 mb-4">
+    <div class="card shadow-sm">
+      <div class="card-header bg-primary text-white">📌 Task Status Overview</div>
+      <ul class="list-group list-group-flush">
+        {% for item in task_counts %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            {{ item.status|title }}
+            <span class="badge bg-primary rounded-pill">{{ item.total }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- Priority Overview -->
+  <div class="col-md-6 mb-4">
+    <div class="card shadow-sm">
+      <div class="card-header bg-warning text-dark">⚠️ Priority Distribution</div>
+      <ul class="list-group list-group-flush">
+        {% for item in priorities %}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            {{ item.priority|title }}
+            <span class="badge bg-warning rounded-pill">{{ item.total }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Pie Chart: Task Status -->
+  <div class="col-md-6 mb-4">
+    <div class="card">
+      <div class="card-header">📊 Status</div>
+      <div class="card-body"><canvas id="statusChart" width="604" height="604"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Doughnut Chart: Priority -->
+  <div class="col-md-6 mb-4">
+    <div class="card">
+      <div class="card-header">📊 Priority (Doughnut)</div>
+      <div class="card-body"><canvas id="priorityChart" width="604" height="604"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Line Chart: Priority Trends -->
+  <div class="col-md-12 mb-4">
+    <div class="card">
+      <div class="card-header">📈 Priority Line Chart</div>
+      <div class="card-body"><canvas id="priorityLineChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Time Series Chart: Tasks over time -->
+  <div class="col-md-12 mb-4">
+    <div class="card">
+      <div class="card-header">📆 Tasks Over Time</div>
+      <div class="card-body"><canvas id="timeSeriesChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const statusLabels = [{% for item in task_counts %}'{{ item.status|title }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+  const statusData = [{% for item in task_counts %}{{ item.total }}{% if not forloop.last %},{% endif %}{% endfor %}];
+  const priorityLabels = [{% for item in priorities %}'{{ item.priority|title }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+  const priorityData = [{% for item in priorities %}{{ item.total }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+  const statusChart = new Chart(document.getElementById('statusChart'), {
+    type: 'pie',
+    data: {
+      labels: statusLabels,
+      datasets: [{
+        data: statusData,
+        backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#6c757d']
+      }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+  });
+
+  const priorityChart = new Chart(document.getElementById('priorityChart'), {
+    type: 'doughnut',
+    data: {
+      labels: priorityLabels,
+      datasets: [{
+        data: priorityData,
+        backgroundColor: ['#ffc107', '#fd7e14', '#dc3545', '#198754']
+      }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+  });
+
+  const priorityLineChart = new Chart(document.getElementById('priorityLineChart'), {
+    type: 'line',
+    data: {
+      labels: priorityLabels,
+      datasets: [{
+        label: 'Priority Trends',
+        data: priorityData,
+        borderColor: '#0d6efd',
+        backgroundColor: 'rgba(13,110,253,0.1)',
+        fill: true,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+
+  const timeLabels = [{% for item in task_dates %}'{{ item.date }}'{% if not forloop.last %},{% endif %}{% endfor %}];
+  const timeData = [{% for item in task_dates %}{{ item.total }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+  const timeSeriesChart = new Chart(document.getElementById('timeSeriesChart'), {
+    type: 'bar',
+    data: {
+      labels: timeLabels,
+      datasets: [{
+        label: 'Tasks Created',
+        data: timeData,
+        backgroundColor: '#198754'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true },
+        x: { ticks: { autoSkip: true, maxTicksLimit: 10 } }
+      }
+    }
+  });
+</script>
+{% endblock %}

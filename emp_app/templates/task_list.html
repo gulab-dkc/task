@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+  <h2>Task List</h2>
+  <a href="{% url 'create_task' %}" class="btn btn-primary mt-2 mt-sm-0">
+    <i class="bi bi-plus-circle me-1"></i> New Task
+  </a>
+</div>
+<!-- Django messages -->
+{% if messages %}
+{% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+{% endfor %}
+{% endif %}
+<!-- 🔍 Search Form -->
+<form method="get" class="row g-2 mb-4" id="search-form">
+  <div class="col-12 col-md-4 col-lg-3">
+    <input type="text" name="search" class="form-control" placeholder="Search tasks..." id="search-input" value="{{ request.GET.search }}">
+  </div>
+  <div class="col-12 col-md-4 col-lg-2">
+    <input type="text" name="task_name" class="form-control" placeholder="Search by Task Name" value="{{ request.GET.task_name }}">
+  </div>
+  <div class="col-12 col-md-4 col-lg-2">
+    <input type="text" name="assigned_to" class="form-control" placeholder="Assigned To" value="{{ request.GET.assigned_to }}">
+  </div>
+  <div class="col-12 col-md-4 col-lg-2">
+    <select name="status" class="form-select">
+      <option value="">Status</option>
+      <option value="in progress" {% if request.GET.status == 'in progress' %}selected{% endif %}>In Progress</option>
+      <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>Completed</option>
+      <option value="hold" {% if request.GET.status == 'hold' %}selected{% endif %}>On Hold</option>
+    </select>
+  </div>
+  <div class="col-12 col-md-4 col-lg-2">
+    <select name="priority" class="form-select">
+      <option value="">Priority</option>
+      <option value="low" {% if request.GET.priority == 'low' %}selected{% endif %}>Low</option>
+      <option value="medium" {% if request.GET.priority == 'medium' %}selected{% endif %}>Medium</option>
+      <option value="high" {% if request.GET.priority == 'high' %}selected{% endif %}>High</option>
+    </select>
+  </div>
+  <div class="col-12 col-md-4 col-lg-2">
+    <input type="date" name="start_date" class="form-control" value="{{ request.GET.start_date }}">
+    <small class="text-muted">Start Date</small>
+  </div>
+  <div class="col-12 col-md-4 col-lg-2">
+    <input type="date" name="expected_end_date" class="form-control" value="{{ request.GET.expected_end_date }}">
+    <small class="text-muted">Expected End Date</small>
+  </div>
+  <div class="col-12 col-lg-auto">
+    <button type="submit" class="btn btn-outline-primary w-100">Search</button>
+  </div>
+</form>
+
+<!-- ✅ Highlight + disable completed task rows -->
+<style>
+  .completed-task {
+    color: #6c757d;
+    pointer-events: none;
+    opacity: 0.7;
+  }
+  .completed-task td {
+    border-color: #dee2e6;
+  }
+</style>
+
+<!-- Task Table -->
+<div class="table-responsive">
+  <table class="table table-bordered table-hover">
+    <thead class="table-light">
+      <tr>
+        <th>Task</th>
+        <th>Assigned To</th>
+        <th>Status</th>
+        <th>Priority</th>
+        <th>Start</th>
+        <th>Expected End</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="task-table-body">
+      {% for task in tasks %}
+      <tr class="{% if task.status == 'completed' %}completed-task{% endif %}">
+        <td>{{ task.task_name }}</td>
+        <td>{{ task.assigned_to.name }}</td>
+        <td>
+          <span class="badge 
+            {% if task.status == 'in progress' %} bg-info 
+            {% elif task.status == 'completed' %} bg-success 
+            {% elif task.status == 'hold' %} bg-warning 
+            {% else %} bg-secondary {% endif %}">
+            {{ task.status|upper }}
+          </span>
+        </td>
+        <td>
+          <span class="badge 
+            {% if task.priority == 'low' %} bg-success 
+            {% elif task.priority == 'medium' %} bg-warning 
+            {% elif task.priority == 'high' %} bg-danger 
+            {% else %} bg-secondary {% endif %}">
+            {{ task.priority|title }}
+          </span>
+        </td>
+        <td>{{ task.start_date }}</td>
+        <td>{{ task.expected_end_date }}</td>
+        <td style="display: flex; gap: 10px; flex-wrap: wrap;">
+          {% if task.status != 'completed' %}
+            <a href="{% url 'task_detail' task.id %}" class="btn btn-info btn-sm">Comment</a>
+            <a href="{% url 'finished_task' task.id %}" class="btn btn-warning btn-sm">Mark Complete</a>
+            <button class="btn btn-secondary btn-sm" data-bs-toggle="modal"
+                    data-bs-target="#changeStatusModal"
+                    data-task-id="{{ task.id }}"
+                    data-task-name="{{ task.task_name }}"
+                    data-task-status="{{ task.status }}">
+              Change Status
+            </button>
+          {% else %}
+            <button class="btn btn-secondary btn-sm" disabled>Completed</button>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7" class="text-center text-muted">No tasks found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Status Change Modal -->
+<div class="modal fade" id="changeStatusModal" tabindex="-1" aria-labelledby="changeStatusModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="post" action="{% url 'change_task_status_modal' %}">
+      {% csrf_token %}
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="changeStatusModalLabel">Change Task Status</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="task_id" id="modal-task-id">
+          <div class="mb-3">
+            <label for="modal-task-status" class="form-label">Status</label>
+            <select class="form-select" name="status" id="modal-task-status" required>
+              <option value="">-- Select Status --</option>
+              <option value="in progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="hold">On Hold</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Update Status</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Search Filter JS -->
+<script>
+  document.getElementById('search-input').addEventListener('keyup', function () {
+    let searchTerm = this.value.toLowerCase();
+    let taskRows = document.querySelectorAll('#task-table-body tr');
+
+    taskRows.forEach(function (row) {
+      let taskName = row.querySelector('td:nth-child(1)').innerText.toLowerCase();
+      let assignedTo = row.querySelector('td:nth-child(2)').innerText.toLowerCase();
+      let status = row.querySelector('td:nth-child(3)').innerText.toLowerCase();
+      let priority = row.querySelector('td:nth-child(4)').innerText.toLowerCase();
+
+      if (taskName.includes(searchTerm) || assignedTo.includes(searchTerm) || status.includes(searchTerm) || priority.includes(searchTerm)) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  });
+
+  const changeStatusModal = document.getElementById('changeStatusModal');
+  changeStatusModal.addEventListener('show.bs.modal', function (event) {
+    const button = event.relatedTarget;
+    const taskId = button.getAttribute('data-task-id');
+    const currentStatus = button.getAttribute('data-task-status');
+
+    const modalTaskIdInput = changeStatusModal.querySelector('#modal-task-id');
+    const modalStatusSelect = changeStatusModal.querySelector('#modal-task-status');
+
+    modalTaskIdInput.value = taskId;
+    modalStatusSelect.value = currentStatus;
+  });
+</script>
+{% endblock %}

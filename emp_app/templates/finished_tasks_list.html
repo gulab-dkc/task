@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h3>✅ Completed Tasks</h3>
+
+<!-- 🔍 Search and Filter Form -->
+<form method="get" class="row g-2 mb-4" id="filter-form">
+    <!-- Search by Task Name -->
+    <div class="col-md-4 col-lg-3">
+        <input type="text" name="search" class="form-control" placeholder="Search tasks..." value="{{ request.GET.search }}" id="search-input">
+    </div>
+
+    <!-- Filter by Employee Name -->
+    <div class="col-md-4 col-lg-3">
+        <input type="text" name="emp_name" class="form-control" placeholder="Search by Employee" value="{{ request.GET.emp_name }}">
+    </div>
+
+    <!-- Filter by Description -->
+    <div class="col-md-4 col-lg-3">
+        <input type="text" name="description" class="form-control" placeholder="Search by Description" value="{{ request.GET.description }}">
+    </div>
+
+    <!-- Filter by Finished Date -->
+    <div class="col-md-4 col-lg-2">
+        <input type="date" name="finished_date" class="form-control" value="{{ request.GET.finished_date }}">
+    </div>
+
+    <div class="col-12 col-lg-auto">
+        <button type="submit" class="btn btn-outline-primary w-100">Search</button>
+    </div>
+</form>
+
+<!-- Completed Tasks Table -->
+<table class="table table-bordered table-striped table-responsive" id="task-table">
+    <thead class="table-light">
+        <tr>
+            <th>S.N</th>
+            <th>Task</th>
+            <th>Employee</th>
+            <th>Description</th>
+            <th>Finished Date</th>
+        </tr>
+    </thead>
+    <tbody id="task-table-body">
+        {% for task in tasks %}
+        <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ task.task.task_name }}</td>
+            <td>{{ task.emp_name.name }}</td>
+            <td>{{ task.description }}</td>
+            <td>{{ task.finished_date|date:"d M Y, H:i" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5">No completed tasks found.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+    // Listen for keyup event on search input field
+    document.getElementById('search-input').addEventListener('keyup', function() {
+        let searchTerm = this.value.toLowerCase();
+        let taskRows = document.querySelectorAll('#task-table-body tr');
+        
+        taskRows.forEach(function(row) {
+            let taskName = row.querySelector('td:nth-child(2)').innerText.toLowerCase();
+            let empName = row.querySelector('td:nth-child(3)').innerText.toLowerCase();
+            let description = row.querySelector('td:nth-child(4)').innerText.toLowerCase();
+            
+            // Filter rows based on search term
+            if (taskName.includes(searchTerm) || empName.includes(searchTerm) || description.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+
+    // Filter based on form submission
+    document.getElementById('filter-form').addEventListener('submit', function(event) {
+        // Here you can handle server-side filtering or more advanced client-side filtering
+        // For now, just reloading the page with the updated filter query.
+    });
+</script>
+
+{% endblock %}
