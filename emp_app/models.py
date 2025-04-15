@@ -21,7 +21,13 @@ class EmployeeSignUp(AbstractUser):
         return self.email
 
 
+class Locations(models.Model):
+    location_name = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
+    def __str__(self):
+        return self.location_name
 
 class Task(models.Model):
     PRIORITY_CHOICES = [
@@ -32,16 +38,15 @@ class Task(models.Model):
     STATUS = [
         ('in progress', 'IN PROGRESS'),
         ('completed', 'COMPLETED'),
-        ('hold', 'HOLD'),
     ]
 
-    task_name = models.TextField()
-    assigned_to = models.ForeignKey(EmployeeSignUp, on_delete=models.CASCADE)
-    start_date = models.DateTimeField(default=timezone.now)
-    expected_end_date = models.DateTimeField()
-    actual_end_date = models.DateTimeField(null=True, blank=True)
+    task_name = models.CharField(max_length=255, null=True, blank=True)
+    location = models.ForeignKey(Locations, on_delete=models.CASCADE, null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
+    start_date = models.DateField(default=timezone.now)
+    end_date = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS, default='in progress')
-    created_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateField(default=timezone.now)
     priority = models.CharField(
         max_length=10, choices=PRIORITY_CHOICES, default='Medium')
 
@@ -50,6 +55,7 @@ class Task(models.Model):
     
 class Comment(models.Model):
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='comments')
+    comment_by = models.ForeignKey(EmployeeSignUp, on_delete=models.CASCADE, null=True, blank=True)
     comment_text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -66,5 +72,5 @@ class FinishedTask(models.Model):
     finished = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.task_name.task_name
+        return self.task.task_name
 

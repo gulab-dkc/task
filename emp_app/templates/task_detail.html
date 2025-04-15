@@ -1,60 +1,242 @@
 {% extends 'base.html' %}
-{% load widget_tweaks %}
+{% load static %}
 
 {% block content %}
-<div class="container mt-4">
-  <h2>{{ task.task_name }}</h2>
-  <p>
-    <strong>Status:</strong>
-    <span class="badge
-      {% if task.status == 'completed' %} bg-success
-      {% elif task.status == 'hold' %} bg-warning text-dark
-      {% else %} bg-info text-dark
-      {% endif %}">
-      {{ task.status|upper }}
-    </span>
-    |
-    <strong>Priority:</strong> {{ task.priority }}
-  </p>
+<div class="container ">
+  
+    <div class="card-body">
+      <h2 class="card-title pb-3">{{ task.task_name }}</h2>
+      <!-- Buttons -->
+      <div class="d-flex flex-wrap gap-2 mb-3">
 
-  <!-- Show messages -->
-  {% if messages %}
-    {% for message in messages %}
-      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+
+          <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#taskcompleteModal">
+            ✅ MARK TASK AS COMPLETE
+          </button>
+
+          <button class="btn" style="margin-left: 10px; 
+            {% if task.status == 'pending' %}background-color: #ffc107; color: black;
+            {% elif task.status == 'in progress' %}background-color: #0d6efd; color: white;
+            {% elif task.status == 'completed' %}background-color: #198754; color: white;
+            {% else %}background-color: #6c757d; color: white;{% endif %}" data-bs-toggle="modal"
+            data-bs-target="">
+            Status: {{ task.status|upper }}
+          </button>
+        </div>
+        <!-- PRIORITY BUTTON with direct color -->
+        <button class="btn" style="{% if task.priority == 'high' %}background-color: #dc3545; color: white;
+          {% elif task.priority == 'medium' %}background-color: #ffc107; color: black;
+          {% else %}background-color: #198754; color: white;{% endif %}" data-bs-toggle="modal"
+          data-bs-target="#priorityModal">
+          Priority: {{ task.priority|upper }}
+        </button>
+        <button class="btn" style="background-color: #0dcaf0; color: black;" data-bs-toggle="modal"
+          data-bs-target="#locationModal">
+          <i class="fa fa-map-marker-alt"></i> Location: {{ task.location }}
+        </button>
       </div>
-    {% endfor %}
-  {% endif %}
 
-  <hr>
-  <h4>Add a Comment</h4>
-  <form method="post" class="mb-4">
-    {% csrf_token %}
-    {% for field in form %}
-      <div class="mb-3">
-        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-        {{ field|add_class:"form-control" }}
-        {% for error in field.errors %}
-          <div class="text-danger small">{{ error }}</div>
-        {% endfor %}
+      <!-- Start Dates -->
+      <ul class="list-group list-group-flush mb-3">
+        <li class="list-group-item">
+          📅 Start Date:
+          <button class="btn btn-link">
+            {{ task.start_date|date:'d M Y' }}
+          </button>
+        </li>
+      </ul>
+      <!-- End Dates -->
+      <ul class="list-group list-group-flush mb-3">
+        <li class="list-group-item">
+          📅 End Date:
+          <button class="btn btn-link" data-bs-toggle="modal" data-bs-target="#endDateModal"
+            data-end-date="{{ task.end_date|date:'Y-m-d' }}">
+            {{ task.end_date|date:'d M Y' }}
+          </button>
+        </li>
+      </ul>
+
+      <!-- Description -->
+      <div class="bg-light p-3 rounded shadow-sm mb-4" data-bs-toggle="modal" data-bs-target="#descriptionModal"
+        style="cursor: pointer;">
+        <h5 class="mb-2">📝 Description</h5>
+        <textarea class="form-control" rows="3" readonly>{{ task.description|striptags  }}</textarea>
+        
       </div>
-    {% endfor %}
-    <button type="submit" class="btn btn-sm btn-outline-primary">➕ Add Comment</button>
-  </form>
 
-  <h5 class="mt-4">💬 Comments</h5>
-  <ul class="list-group mt-2">
-    {% for comment in comments %}
-      <li class="list-group-item">
-        <small class="text-muted">{{ comment.created_at|date:"d M Y, H:i" }}</small><br>
-        {{ comment.comment_text }}
-      </li>
-    {% empty %}
-      <li class="list-group-item text-muted">No comments yet.</li>
-    {% endfor %}
-  </ul>
+      <!-- Comment Form -->
+      <div class="mb-4">
+        <h5>💬 Add New Update</h5>
+        <form method="POST" action="{% url 'add_comment' task.id %}">
+          {% csrf_token %}
+          <textarea name="comment_text" class="form-control mb-2" rows="3" placeholder="Write your comment..."
+            required></textarea>
+          <button type="submit" class="btn btn-primary">➕ Add Update</button>
+        </form>
+      </div>
 
-  <a href="{% url 'task_list' %}" class="btn btn-link mt-3">⬅ Back to Task List</a>
+      <!-- Comments List -->
+      <h5 class="mt-4">🕒 Update Log</h5>
+      <ul class="list-group">
+        {% if latest_comment %}
+        <li class="list-group-item">
+          <div class="fw-semibold mb-1">{{ latest_comment.comment_text }}</div>
+          <div class="d-flex justify-content-between text-muted small mt-4">
+            <span>🗓 {{ latest_comment.created_at|date:"d M Y, H:i" }}</span>
+            <span>👤 {{ latest_comment.comment_by.name }}</span>
+          </div>
+        </li>
+        {% else %}
+        <li class="list-group-item text-center">No updates yet.</li>
+        {% endif %}
+      </ul>
+      <a href="{% url 'dashboard' %}" class="btn btn-link mt-3">⬅ Back to Dashboard</a>
+    </div>
+  
+</div>
+
+<!-- MODALS -->
+
+<!-- Status Modal -->
+<div class="modal fade" id="statusModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="POST" action="{% url 'update_task_status' task.id %}">
+      {% csrf_token %}
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Update Status</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <select name="status" class="form-select">
+            <option value="in progress" {% if task.status == 'in progress' %}selected{% endif %}>In Progress</option>
+            <option value="completed" {% if task.status == 'completed' %}selected{% endif %}>Completed</option>
+            <option value="hold" {% if task.status == 'hold' %}selected{% endif %}>Hold</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-success" type="submit">Update</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Priority Modal -->
+<div class="modal fade" id="priorityModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="POST" action="{% url 'update_task_priority' task.id %}">
+      {% csrf_token %}
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Update Priority</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <select name="priority" class="form-select">
+            <option value="low" {% if task.priority == 'low' %}selected{% endif %}>Low</option>
+            <option value="medium" {% if task.priority == 'medium' %}selected{% endif %}>Medium</option>
+            <option value="high" {% if task.priority == 'high' %}selected{% endif %}>High</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-success" type="submit">Update</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Location Modal -->
+<div class="modal fade" id="locationModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="POST" action="{% url 'update_task_location' task.id %}">
+      {% csrf_token %}
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Update Location</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <select name="location" class="form-select">
+            {% for loc in locations %}
+            <option value="{{ loc.id }}" {% if task.location.id == loc.id %}selected{% endif %}>{{ loc.location_name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-success" type="submit">Update</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Mark Task as Complete Modal -->
+<div class="modal fade" id="taskcompleteModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="POST" action="{% url 'task_mark_complete' task.id %}">
+      {% csrf_token %}
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Mark Task as Complete</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <label for="description" class="form-label">Completion Description</label>
+          <textarea name="description" class="form-control" rows="3" placeholder="Description..." required></textarea>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-success" type="submit">Update</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<!-- Description Edit Modal -->
+<div class="modal fade" id="descriptionModal" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="POST" action="{% url 'update_task_description' task.id %}">
+      {% csrf_token %}
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Description</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <textarea name="description" class="form-control" rows="4">{{ task.description }}</textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Update</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- End Date Modal -->
+<div class="modal fade" id="endDateModal" tabindex="-1" aria-labelledby="endDateModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="POST" action="{% url 'update_task_end_date' task.id %}">
+      {% csrf_token %}
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="endDateModalLabel">Update End Date</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <label for="end_date" class="form-label">End Date</label>
+          <input type="date" class="form-control" id="end_date" name="end_date" value="{{ task.end_date|date:'Y-m-d' }}"
+            required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-primary">Update</button>
+        </div>
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}

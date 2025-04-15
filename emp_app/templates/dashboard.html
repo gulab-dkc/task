@@ -1,7 +1,73 @@
 {% extends 'base.html' %}
 {% block content %}
-<h2 class="mb-4">📊 Dashboard</h2>
+{% load widget_tweaks %}
+<style>
+  .btn-group .btn {
+    border: none;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+    display: flex;
+    align-items: center;
+  }
 
+  .btn-group .btn.active {
+    background-color: #eee6ff;
+    color: #000;
+  }
+
+  .status-icon {
+    width: 1rem;
+    display: inline-block;
+    text-align: center;
+  }
+
+  @media (max-width: 576px) {
+    .btn-group .btn {
+      font-size: 14px;
+      padding: 0.5rem 1rem;
+    }
+  }
+
+  .custom-card {
+    border-radius: 15px;
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .custom-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+  }
+
+  .card-title {
+    font-size: 1rem;
+    color: #000;
+  }
+
+  .card-body p {
+    margin-bottom: 0.25rem;
+  }
+
+  .card-body {
+    /*  */
+    background-color: beige;
+    text-decoration: NONE;
+  }
+</style>
+<div>
+  <div class="d-flex justify-content-between mb-4">
+    <button type="button" class="btn btn-outline-primary no-hover" data-bs-toggle="modal"
+    data-bs-target="#createTaskModal">
+    <i class="bi bi-plus-circle mr-2 mb-1" style="margin-right: 5px; margin-bottom: 4px;"></i> Add New Task
+  </button>
+  <a href="{% url 'location_crud' %}">
+    <button type="button" class="btn btn-outline-primary no-hover">
+      <i class="bi bi-plus-circle mr-2 mb-1" style="margin-right: 5px; margin-bottom: 4px;"></i> Add Location
+    </button>
+  </a>
+  </div>
+  
+
+<h2 class="mb-4 mt-4">📊 Dashboard</h2>
 <div class="row">
   <!-- Task Status -->
   <div class="col-md-6 mb-4">
@@ -9,139 +75,198 @@
       <div class="card-header bg-primary text-white">📌 Task Status Overview</div>
       <ul class="list-group list-group-flush">
         {% for item in task_counts %}
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            {{ item.status|title }}
-            <span class="badge bg-primary rounded-pill">{{ item.total }}</span>
-          </li>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          {{ item.status|title }}
+          <span class="badge bg-primary rounded-pill">{{ item.total }}</span>
+        </li>
         {% endfor %}
       </ul>
     </div>
   </div>
-
-  <!-- Priority Overview -->
-  <div class="col-md-6 mb-4">
-    <div class="card shadow-sm">
-      <div class="card-header bg-warning text-dark">⚠️ Priority Distribution</div>
-      <ul class="list-group list-group-flush">
-        {% for item in priorities %}
-          <li class="list-group-item d-flex justify-content-between align-items-center">
-            {{ item.priority|title }}
-            <span class="badge bg-warning rounded-pill">{{ item.total }}</span>
-          </li>
-        {% endfor %}
-      </ul>
+  <hr>
+  <div class="d-flex justify-content-center mt-3">
+    <div class="btn-group rounded-pill border overflow-hidden shadow-sm" style="width: -webkit-fill-available;" role="group" id="statusToggle">
+      <a href="?status=in progress"
+        class="btn btn-light text-dark px-4 py-2 {% if selected_status == 'in progress' or not selected_status %}active{% endif %}">
+        <span class="status-icon me-2">{% if selected_status == 'in progress' or not selected_status %}&#10003;{% endif %}</span> In Progress
+      </a>
+      <a href="?status=completed"
+        class="btn btn-light text-dark px-4 py-2 {% if selected_status == 'completed' %}active{% endif %}">
+        <span class="status-icon me-2">{% if selected_status == 'completed' %}&#10003;{% endif %}</span> Completed
+      </a>
     </div>
   </div>
-</div>
+  
+  <div class="d-flex justify-content-between px-4 mt-2">
+    <a href="?status={{ selected_status }}&sort=location"
+       class="btn btn-sm mt-3 btn-outline-secondary {% if active_sort == 'location' %}active btn-secondary text-white{% endif %}">
+      📍 By Location
+    </a>
+  
+    <a href="?status={{ selected_status }}&sort=end_date"
+       class="btn btn-sm mt-3 btn-outline-secondary {% if active_sort == 'end_date' %}active btn-secondary text-white{% endif %}">
+      📅 By End Date
+    </a>
+  </div>
+  
+   {% if active_sort == 'location' and locations_grouped %}
+   <div class="mt-3">
+     <div id="carouselExample" class="carousel slide" data-bs-ride="carousel">
+       <div class="carousel-inner">
+         
+         {% for group in locations_grouped %}
+           <div class="carousel-item {% if forloop.first %}active{% endif %}">
+             <div class="d-flex justify-content-around">
+               {% for loc in group %}
+                 {% if loc %}
+                 
+                 <a href="?status={{ selected_status }}&sort=location&loc_id={{ loc.id }}"
+                  class="d-block px-2 text-center text-decoration-none {% if loc.id == selected_loc_id %}badge rounded-pill text-bg-info{% endif %}">
+                  {{ loc.location_name|slice:":15" }}
+                </a>
+                 {% else %}
+                 {% endif %}
+               {% endfor %}
+             </div>
+           </div>
+         {% endfor %}
+     
+       </div>
+     
+       <button class="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev" style="width: 0;">
+         <span><i class="bi bi-caret-left-fill" style="background-color: #000;"></i></span>
+       </button>
+       <button class="carousel-control-next" type="button" data-bs-target="#carouselExample" data-bs-slide="next" style="width: 0;">
+         <span><i class="bi bi-caret-right-fill" style="background-color: #000;"></i></span>
+       </button>
+     </div>
 
-<div class="row">
-  <!-- Pie Chart: Task Status -->
-  <div class="col-md-6 mb-4">
-    <div class="card">
-      <div class="card-header">📊 Status</div>
-      <div class="card-body"><canvas id="statusChart" width="604" height="604"></canvas></div>
+   </div>
+   {% endif %}
+   
+  <div class="container mt-2">
+    <div class="row">
+      {% for task in tasks %}
+      <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4">
+        <div class="card h-100 shadow-sm border-0 custom-card">
+          <a href="{% url 'task_detail' task.id %}" class="card-body">
+            <!-- Task Name -->
+            <h5 class="card-title fw-bold text-uppercase">{{ task.task_name }}</h5>
+
+            <!-- Task Dates and Priority -->
+            <p class="text-muted small mb-1">
+              🗓 {{ task.start_date|date:"d M Y" }}
+              {% if task.priority == 'high' %}
+              <span class="badge bg-danger text-white text-capitalize">{{ task.priority }}</span>
+              {% elif task.priority == 'medium' %}
+              <span class="badge bg-warning text-dark text-capitalize">{{ task.priority }}</span>
+              {% else %}
+              <span class="badge bg-success text-white text-capitalize">{{ task.priority }}</span>
+              {% endif %}
+              📅 {{ task.end_date|date:"d M Y" }}
+            </p>
+
+            <!-- Task Description -->
+            <p class="text-secondary small mb-0">
+              📝 {{ task.description|default:"No description" }}
+            </p>
+
+            <!-- Task Location -->
+            <p class="text-muted small mt-2">
+              📍 {{ task.location.location_name }}
+            </p>
+          </a>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12 text-center">
+        <p class="text-muted">No tasks available.</p>
+      </div>
+      {% endfor %}
     </div>
   </div>
 
-  <!-- Doughnut Chart: Priority -->
-  <div class="col-md-6 mb-4">
-    <div class="card">
-      <div class="card-header">📊 Priority (Doughnut)</div>
-      <div class="card-body"><canvas id="priorityChart" width="604" height="604"></canvas></div>
+  <!--Task  Modal form -->
+  <div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="createTaskModalLabel">📝 Create Task</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form method="POST">
+            {% csrf_token %}
+
+            {% for field in form %}
+            <div class="mb-3">
+              <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+              {{ field|add_class:"form-control" }}
+              {% for error in field.errors %}
+              <div class="text-danger small">{{ error }}</div>
+              {% endfor %}
+            </div>
+            {% endfor %}
+
+            <div class="d-flex justify-content-between mt-4">
+              <button type="submit" name="submit_task" class="btn btn-primary">➕ Create</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
-</div>
+  <!-- Task Modal form end -->
+  <!--Task  Modal form -->
+  <div class="modal fade" id="createLocationModal" tabindex="-1" aria-labelledby="createLocationModal"
+    aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="createTaskModalLabel">📝 Create Location</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form method="POST">
+            {% csrf_token %}
+            {% for field in location_form %}
+            <div class="mb-3">
+              <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+              {{ field|add_class:"form-control" }}
+              {% for error in field.errors %}
+              <div class="text-danger small">{{ error }}</div>
+              {% endfor %}
+            </div>
+            {% endfor %}
 
-<div class="row">
-  <!-- Line Chart: Priority Trends -->
-  <div class="col-md-12 mb-4">
-    <div class="card">
-      <div class="card-header">📈 Priority Line Chart</div>
-      <div class="card-body"><canvas id="priorityLineChart"></canvas></div>
+            <div class="d-flex justify-content-between mt-4">
+              <button type="submit" name="submit_location" class="btn btn-primary">➕ Create</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
+  <script>
 
-  <!-- Time Series Chart: Tasks over time -->
-  <div class="col-md-12 mb-4">
-    <div class="card">
-      <div class="card-header">📆 Tasks Over Time</div>
-      <div class="card-body"><canvas id="timeSeriesChart"></canvas></div>
-    </div>
-  </div>
-</div>
+    document.addEventListener("DOMContentLoaded", function () {
+      const buttons = document.querySelectorAll('#statusToggle .btn');
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-  const statusLabels = [{% for item in task_counts %}'{{ item.status|title }}'{% if not forloop.last %},{% endif %}{% endfor %}];
-  const statusData = [{% for item in task_counts %}{{ item.total }}{% if not forloop.last %},{% endif %}{% endfor %}];
-  const priorityLabels = [{% for item in priorities %}'{{ item.priority|title }}'{% if not forloop.last %},{% endif %}{% endfor %}];
-  const priorityData = [{% for item in priorities %}{{ item.total }}{% if not forloop.last %},{% endif %}{% endfor %}];
+      buttons.forEach(button => {
+        button.addEventListener('click', () => {
+          buttons.forEach(btn => {
+            btn.classList.remove('active');
+            btn.querySelector('.status-icon').innerHTML = '';
+          });
 
-  const statusChart = new Chart(document.getElementById('statusChart'), {
-    type: 'pie',
-    data: {
-      labels: statusLabels,
-      datasets: [{
-        data: statusData,
-        backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#6c757d']
-      }]
-    },
-    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-  });
+          button.classList.add('active');
+          button.querySelector('.status-icon').innerHTML = '&#10003;';
+        });
+      });
+    });
+  </script>
 
-  const priorityChart = new Chart(document.getElementById('priorityChart'), {
-    type: 'doughnut',
-    data: {
-      labels: priorityLabels,
-      datasets: [{
-        data: priorityData,
-        backgroundColor: ['#ffc107', '#fd7e14', '#dc3545', '#198754']
-      }]
-    },
-    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-  });
 
-  const priorityLineChart = new Chart(document.getElementById('priorityLineChart'), {
-    type: 'line',
-    data: {
-      labels: priorityLabels,
-      datasets: [{
-        label: 'Priority Trends',
-        data: priorityData,
-        borderColor: '#0d6efd',
-        backgroundColor: 'rgba(13,110,253,0.1)',
-        fill: true,
-        tension: 0.3
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true } }
-    }
-  });
-
-  const timeLabels = [{% for item in task_dates %}'{{ item.date }}'{% if not forloop.last %},{% endif %}{% endfor %}];
-  const timeData = [{% for item in task_dates %}{{ item.total }}{% if not forloop.last %},{% endif %}{% endfor %}];
-
-  const timeSeriesChart = new Chart(document.getElementById('timeSeriesChart'), {
-    type: 'bar',
-    data: {
-      labels: timeLabels,
-      datasets: [{
-        label: 'Tasks Created',
-        data: timeData,
-        backgroundColor: '#198754'
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { beginAtZero: true },
-        x: { ticks: { autoSkip: true, maxTicksLimit: 10 } }
-      }
-    }
-  });
-</script>
-{% endblock %}
+  {% endblock %}
