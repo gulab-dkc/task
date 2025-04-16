@@ -1,9 +1,9 @@
 from django.utils import timezone
 from django.db import models
-from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth.models import AbstractUser
 from .manager import Manager
+from simple_history.models import HistoricalRecords
 
 
 class EmployeeSignUp(AbstractUser):
@@ -25,6 +25,7 @@ class Locations(models.Model):
     location_name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    history = HistoricalRecords()
 
     def __str__(self):
         return self.location_name
@@ -49,6 +50,7 @@ class Task(models.Model):
     created_at = models.DateField(default=timezone.now)
     priority = models.CharField(
         max_length=10, choices=PRIORITY_CHOICES, default='Medium')
+    history = HistoricalRecords()
 
     def __str__(self):
         return self.task_name
@@ -58,6 +60,7 @@ class Comment(models.Model):
     comment_by = models.ForeignKey(EmployeeSignUp, on_delete=models.CASCADE, null=True, blank=True)
     comment_text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    history = HistoricalRecords()
 
     def __str__(self):
         return f"Comment on {self.task.task_name} by {self.created_at}"    
@@ -70,6 +73,7 @@ class FinishedTask(models.Model):
     finished_date = models.DateTimeField(default=timezone.now)
     task = models.ForeignKey(Task, on_delete=models.CASCADE,related_name='finished_tasks')
     finished = models.BooleanField(default=False)
+    history = HistoricalRecords()
 
     def __str__(self):
         return self.task.task_name

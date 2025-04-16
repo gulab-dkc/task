@@ -27,7 +27,7 @@ SECRET_KEY = "django-insecure-8+)7c4_aba-(73x&i4z*^j^eo7x4utq6t*n^p*=8+3$ct&@$^#
 
 # # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-ALLOWED_HOSTS = ['.vercel.app', 'localhost','127.0.0.1']
+ALLOWED_HOSTS = ['.vercel.app', 'localhost','127.0.0.1','128.100.10.128']
 
 
 # Application definition
@@ -40,7 +40,8 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     'emp_app',
-    'widget_tweaks'
+    'widget_tweaks',
+    'simple_history',
 ]
 
 MIDDLEWARE = [
@@ -52,6 +53,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",  # Add this line
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "simple_history.middleware.HistoryRequestMiddleware",
 ]
 
 
