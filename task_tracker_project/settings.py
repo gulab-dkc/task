@@ -27,8 +27,9 @@ SECRET_KEY = "django-insecure-8+)7c4_aba-(73x&i4z*^j^eo7x4utq6t*n^p*=8+3$ct&@$^#
 
 # # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-ALLOWED_HOSTS = ['.vercel.app', 'localhost','127.0.0.1','128.100.10.128']
+# ALLOWED_HOSTS = ['.vercel.app', 'localhost','127.0.0.1','128.100.10.187']
 
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -84,27 +85,27 @@ WSGI_APPLICATION = "task_tracker_project.wsgi.app"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": BASE_DIR / "db.sqlite3",
-#     }
-# }
-
-
-
-
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',  # or sqlite3, mysql
-        'NAME': config('DATABASE_NAME'),
-        'USER': config('DATABASE_USER'),
-        'PASSWORD': config('DATABASE_PASSWORD'),
-        'HOST': config('DATABASE_HOST'),  # Set to empty string for localhost.
-        'PORT': config('DATABASE_PORT'),  # Set to empty string for default
-       
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
+
+
+
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',  # or sqlite3, mysql
+#         'NAME': config('DATABASE_NAME'),
+#         'USER': config('DATABASE_USER'),
+#         'PASSWORD': config('DATABASE_PASSWORD'),
+#         'HOST': config('DATABASE_HOST'),  # Set to empty string for localhost.
+#         'PORT': config('DATABASE_PORT'),  # Set to empty string for default
+#
+#     }
+# }
 # LOGIN_URL = 'employee_signin'  # Because your signin view is at the root URL
 LOGIN_REDIRECT_URL = '/emp-login/'  # Optional: redirect after successful login
 # Password validation
