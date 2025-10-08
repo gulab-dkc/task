@@ -94,7 +94,7 @@ DATABASES = {
 
 
 
-
+#Cloud DB has been deleted.
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.postgresql',  # or sqlite3, mysql
